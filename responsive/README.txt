@@ -1,4 +1,4 @@
-Identify what aspects of the work have been correctly implemented and what have not.
-Identify anyone with whom you have collaborated or discussed the assignment.
-Say approximately how many hours you have spent completing the assignment.
-Be written in either text format (README.txt) or in Markdown (README.md). Markdown is preferred. No other formats will be accepted. Please use all capital letters for README
+1. It starts at top right on comic when smallest and expanding goes further in the comic but it should
+be starting when screen largest.
+2. I did not discuss/collaborate with anyone
+3. An hour and a half
