@@ -17,14 +17,26 @@
   /* setup lyrics and images */
   var lyricsDiv = document.getElementById("lyrics");
   var para = document.createElement("p");
+  para.id = "p1";
   var node = document.createTextNode("");
   para.appendChild(node);
   lyricsDiv.appendChild(para);
 
   var img = new Image();
+  img.id = "image";
   img.onload = function() {
     lyricsDiv.appendChild(img);
   };
+
+  images = {"birds": "birds.jpg",
+            "Kentucky": "kentucky.jpg",
+            "sun": "sun.jpeg",
+            "bright": "sun.jpeg",
+            "summer,": "sun.jpeg",
+            "cabin": "cabin.jpg",
+            "hard": "frowny.jpg",
+            "weep": "frowny.jpg",
+            "clapping": "clapping.gif"};
 
   lyrics = ["The sun shines bright in My Old Kentucky Home"];
   lyrics.push("Tis summer, the people are gay");
@@ -35,7 +47,7 @@
   lyrics.push("By \'n\' by hard times comes a knocking at the door");
   lyrics.push("Then My Old Kentucky Home, good night!");
   /*Chorus*/
-  lyrics.push("Weep no more my lady");
+  lyrics.push("weep no more my lady");
   lyrics.push("Oh weep no more today");
   lyrics.push("We will sing one song, For My Old Kentucky Home");
   lyrics.push("For My Old Kentucky Home, far away");
@@ -53,8 +65,22 @@
 
   function updateText(vid) {
       if (vid.currentTime >= lyricStartTime) {
-        currentLine = Math.floor((vid.currentTime - lyricStartTime)/sectionTimeInterval);
-        node.nodeValue = lyrics[currentLine];
+        currentLineIndex = Math.floor((vid.currentTime - lyricStartTime)/sectionTimeInterval);
+        currentLine = lyrics[currentLineIndex];
+        node.nodeValue = currentLine;
+        if ((endTime - vid.currentTime) < 4) {
+          img.src = images["clapping"];
+        }
+        else {
+          arr = currentLine.split(" ");
+          for (var key in images) {
+            if(arr.indexOf(key) > 0) {
+              img.src=images[key];
+              return;
+            }
+          }
+          img.src = "";
+        }
     }
   }
   </script>
