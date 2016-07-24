@@ -72,6 +72,8 @@ var redStops = [SouthStation,
   function init() {
     initMap();
   }
+
+  /* initialize map to have markers and polylines */
   function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
       center: SouthStation,
@@ -80,34 +82,39 @@ var redStops = [SouthStation,
 
     placeMarkers(map, redStops);
     drawRoute(map, redRoute);
-}
-function placeMarkers(map, stops) {
-  for (var i = 0; i < stops.length; i++) {
-    new google.maps.Marker({
-      position: stops[i],
-      map: map,
-      title: stops[i].toString(),
-      icon: markerIconPath
-    });
   }
-}
 
-function drawRoute(map, route) {
-  for (var i = 0; i < route.length; i++) {
-    stop = route[i][0];
-    var edge = [];
-    edge.push(stop);
-    for (var j = 0; j < route[i][1].length; j++) {
-      edge.push(route[i][1][j])
-      var path = new google.maps.Polyline({
-        path: edge,
-        geodesic: true,
-        strokeColor: '#FF0000',
-        strokeOpacity: 1.0,
-        strokeWeight: 2
+  /* places markers on map for given array of stops */
+  function placeMarkers(map, stops) {
+    for (var i = 0; i < stops.length; i++) {
+      new google.maps.Marker({
+        position: stops[i],
+        map: map,
+        title: stops[i].toString(),
+        icon: markerIconPath
       });
-      path.setMap(map);
-      edge.pop();
     }
   }
-}
+
+  /* draws route on map for given (directional) adjacency list of stops */
+  function drawRoute(map, route) {
+    for (var i = 0; i < route.length; i++) {
+      stop = route[i][0];
+      var edge = [];
+      edge.push(stop);
+
+      /* loop to handle forks */
+      for (var j = 0; j < route[i][1].length; j++) {
+        edge.push(route[i][1][j])
+        var path = new google.maps.Polyline({
+          path: edge,
+          geodesic: true,
+          strokeColor: '#FF0000',
+          strokeOpacity: 1.0,
+          strokeWeight: 2
+        });
+        path.setMap(map);
+        edge.pop();
+      }
+    }
+  }
