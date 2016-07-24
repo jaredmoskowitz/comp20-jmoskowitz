@@ -68,7 +68,7 @@
         currentLineIndex = Math.floor((vid.currentTime - lyricStartTime)/sectionTimeInterval);
         currentLine = lyrics[currentLineIndex];
         node.nodeValue = currentLine;
-        if ((endTime - vid.currentTime) < 4) {
+        if ((endTime - vid.currentTime) < 3) {
           img.src = images["clapping"];
         }
         else {
