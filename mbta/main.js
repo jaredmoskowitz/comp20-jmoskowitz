@@ -1,4 +1,5 @@
 var map;
+var userLocation;
 
 markerIconPath = 'marker.png'
 
@@ -69,52 +70,78 @@ var redStops = [SouthStation,
   [FieldsCorner, [Shawmut]],
   [Shawmut, [Ashmont]]];
 
-  function init() {
-    initMap();
-  }
+function init() {
+  initMap();
+}
 
-  /* initialize map to have markers and polylines */
-  function initMap() {
-    map = new google.maps.Map(document.getElementById('map'), {
-      center: SouthStation,
-      zoom: 9
+/* initialize map to have markers and polylines */
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: SouthStation,
+    zoom: 9
+  });
+
+  //set up MBTA
+  placeMarkers(map, redStops);
+  drawRoute(map, redRoute);
+
+  //user location specific things
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(setupUserLocation);
+  } else {
+    console.log("Geolocation is not supported by this browser");
+  }
+}
+
+/* places markers on map for given array of stops */
+function placeMarkers(map, stops) {
+  for (var i = 0; i < stops.length; i++) {
+    new google.maps.Marker({
+      position: stops[i],
+      map: map,
+      title: stops[i].toString(),
+      icon: markerIconPath
     });
-
-    placeMarkers(map, redStops);
-    drawRoute(map, redRoute);
   }
+}
 
-  /* places markers on map for given array of stops */
-  function placeMarkers(map, stops) {
-    for (var i = 0; i < stops.length; i++) {
-      new google.maps.Marker({
-        position: stops[i],
-        map: map,
-        title: stops[i].toString(),
-        icon: markerIconPath
+/* draws route on map for given (directional) adjacency list of stops */
+function drawRoute(map, route) {
+  for (var i = 0; i < route.length; i++) {
+    stop = route[i][0];
+    var edge = [];
+    edge.push(stop);
+
+    /* loop to handle forks */
+    for (var j = 0; j < route[i][1].length; j++) {
+      edge.push(route[i][1][j])
+      var path = new google.maps.Polyline({
+        path: edge,
+        geodesic: true,
+        strokeColor: '#FF0000',
+        strokeOpacity: 1.0,
+        strokeWeight: 2
       });
+      path.setMap(map);
+      edge.pop();
     }
   }
+}
 
-  /* draws route on map for given (directional) adjacency list of stops */
-  function drawRoute(map, route) {
-    for (var i = 0; i < route.length; i++) {
-      stop = route[i][0];
-      var edge = [];
-      edge.push(stop);
+function setupUserLocation(position) {
+  placeUserMarker(position, map);
+}
 
-      /* loop to handle forks */
-      for (var j = 0; j < route[i][1].length; j++) {
-        edge.push(route[i][1][j])
-        var path = new google.maps.Polyline({
-          path: edge,
-          geodesic: true,
-          strokeColor: '#FF0000',
-          strokeOpacity: 1.0,
-          strokeWeight: 2
-        });
-        path.setMap(map);
-        edge.pop();
-      }
-    }
+function placeUserMarker(position, map) {
+  coords = {lat: position.coords.latitude, lng: position.coords.longitude};
+  placeMarkers(map, [coords]);
+}
+/*
+returns a google maps coordinate object of user's current location.
+null object will be return if there is error or support
+*/
+function getUserCoords() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition()
   }
+}
