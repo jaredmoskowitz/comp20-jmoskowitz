@@ -1,6 +1,7 @@
 var map;
 var userLocation;
-
+userToClosestStopLineColor = '#3F133D';
+redLineColor = '#FF0000';
 markerIconPath = 'marker.png'
 
 SouthStation    = {name: "South Station", coords: {lat:    42.352271, lng: -71.05524200000001}};
@@ -78,12 +79,12 @@ function init() {
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
     center: SouthStation.coords,
-    zoom: 5
+    zoom: 3
   });
 
   //set up MBTA
   placeMarkers(map, redStops, markerIconPath);
-  drawRoute(map, redRoute);
+  drawRoute(map, redRoute, redLineColor);
 
   //user location specific things
   if (navigator.geolocation) {
@@ -100,6 +101,7 @@ function placeMarkers(map, stops, iconPath) {
   }
 }
 
+/* places a marker on given map */
 function placeMarker(map, coords, name, iconPath) {
   var marker =  new google.maps.Marker({
     position: coords,
@@ -111,7 +113,7 @@ function placeMarker(map, coords, name, iconPath) {
 }
 
 /* draws route on map for given (directional) adjacency list of stops */
-function drawRoute(map, route) {
+function drawRoute(map, route, color) {
   for (var i = 0; i < route.length; i++) {
     stop = route[i][0];
     var edge = [];
@@ -123,7 +125,7 @@ function drawRoute(map, route) {
       var path = new google.maps.Polyline({
         path: edge,
         geodesic: true,
-        strokeColor: '#FF0000',
+        strokeColor: color,
         strokeOpacity: 1.0,
         strokeWeight: 2
       });
@@ -133,18 +135,24 @@ function drawRoute(map, route) {
   }
 }
 
+/* sets marker, info window, and polyine to closest stop */
 function setupUserLocation(position) {
-  coords = {lat: position.coords.latitude, lng: position.coords.longitude};
-  var marker = placeMarker(map, coords, "Current Location", null);
-  setUserInfoWindow(marker, coords, map);
+  userLoc = {name: "current location", coords: {lat: position.coords.latitude, lng: position.coords.longitude}};
+  locDistances = getClosestLocationsFromPoint(userLoc.coords, redStops);
+
+  var marker = placeMarker(map, userLoc.coords, userLoc.name, null);
+  setUserInfoWindow(marker, userLoc.coords, locDistances, map);
+
+  //draw line to closest station
+  drawRoute(map, [[userLoc, [locDistances[0].location]]], userToClosestStopLineColor);
 }
 
-function setUserInfoWindow(userMarker, coords, map) {
-  locDistances = getClosestLocationsFromPoint(coords, redStops);
+/* Sets the html for when the user marker is clicked */
+function setUserInfoWindow(userMarker, coords, locDistances, map) {
   var contentString = '<div id="content">'+
     '<div>'+
     '<p>Stop closest to you: ' +
-    locDistances[0].locationName +
+    locDistances[0].location.name +
     '</p>' +
     '<p>' +
     getInfoTableString(locDistances) +
@@ -161,18 +169,24 @@ function setUserInfoWindow(userMarker, coords, map) {
 }
 
 
+/*
+returns an array in ascending order of distance from given point
+where each element has format: {locationName: __, distance:__ }
+*/
 function getClosestLocationsFromPoint(point, locations) {
   var arr = [];
   for (var i = 0; i < locations.length; i++) {
     arr.push({
-      locationName: locations[i].name,
+      location: locations[i],
       distance: distanceBetweenCoords(point, locations[i].coords)
     });
   }
+
   return arr.sort(function(a, b){return a.distance-b.distance});
 }
 
 
+/* returns a string representing the html for the info window on the user marker*/
 function getInfoTableString(locDistances) {
   entriesString = '';
   for(var i = 0; i<locDistances.length; i++) {
@@ -193,6 +207,7 @@ function getInfoTableString(locDistances) {
   return htmlTable;
 }
 
+/* calculates the distance between two coordinates */
 function distanceBetweenCoords(coord1, coord2) {
 
   var lat2 = coord2.lat;
