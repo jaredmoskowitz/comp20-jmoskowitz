@@ -83,7 +83,14 @@ function initMap() {
   });
 
   //set up MBTA
-  placeMarkers(map, redStops, markerIconPath);
+  markers = placeMarkers(map, redStops, markerIconPath);
+  for (var i = 0; i < redStops.length; i++) {
+    name = redStops[i].name;
+    markers[i].addListener('click', function () {
+      setStopInfoWindow(name, this, map);
+    });
+  }
+
   drawRoute(map, redRoute, redLineColor);
 
   //user location specific things
@@ -96,9 +103,12 @@ function initMap() {
 
 /* places markers on map for given array of stops */
 function placeMarkers(map, stops, iconPath) {
+  markers = [];
   for (var i = 0; i < stops.length; i++) {
-    placeMarker(map, stops[i].coords, stops[i].name, iconPath);
+    markers.push(placeMarker(map, stops[i].coords, stops[i].name, iconPath));
   }
+
+  return markers;
 }
 
 /* places a marker on given map */
@@ -110,6 +120,10 @@ function placeMarker(map, coords, name, iconPath) {
     icon: iconPath
   });
   return marker;
+}
+
+function addClickHandlerToMarker(marker, map, callback) {
+
 }
 
 /* draws route on map for given (directional) adjacency list of stops */
@@ -155,39 +169,21 @@ function setUserInfoWindow(userMarker, coords, locDistances, map) {
     locDistances[0].location.name +
     '</p>' +
     '<p>' +
-    getInfoTableString(locDistances) +
+    getUserInfoTableString(locDistances) +
     '</p>' +
     '</div>';
 
-  var infowindow = new google.maps.InfoWindow({
-      content: contentString
-  });
-
-  userMarker.addListener('click', function() {
-    infowindow.open(map, userMarker);
-  });
-}
-
-
-/*
-returns an array in ascending order of distance from given point
-where each element has format: {locationName: __, distance:__ }
-*/
-function getClosestLocationsFromPoint(point, locations) {
-  var arr = [];
-  for (var i = 0; i < locations.length; i++) {
-    arr.push({
-      location: locations[i],
-      distance: distanceBetweenCoords(point, locations[i].coords)
+    var infowindow = new google.maps.InfoWindow({
+        content: contentString
     });
-  }
 
-  return arr.sort(function(a, b){return a.distance-b.distance});
+    userMarker.addListener('click', function() {
+      infowindow.open(map, userMarker);
+    });
 }
-
 
 /* returns a string representing the html for the info window on the user marker*/
-function getInfoTableString(locDistances) {
+function getUserInfoTableString(locDistances) {
   entriesString = '';
   for(var i = 0; i<locDistances.length; i++) {
     entriesString += '' +
@@ -205,6 +201,67 @@ function getInfoTableString(locDistances) {
   entriesString +
   '</table>';
   return htmlTable;
+}
+
+/* Sets the html for when a stop is clicked */
+function displayStopInfoWindow(predictions, marker, map) {
+  var titleString;
+  if (predictions.length <= 0) {
+    titleString = "Sorry, no trains are coming!";
+  } else {
+    titleString = predictions[0].stop;
+  }
+  var contentString = '<div id="content">'+
+    '<div>'+
+    '<p>' +
+    titleString +
+    '</p>' +
+    '<p>' +
+    getStopInfoTableString(predictions) +
+    '</p>' +
+    '</div>';
+
+    var infowindow = new google.maps.InfoWindow({
+        content: contentString
+    });
+
+    infowindow.open(map, marker);
+}
+
+function getStopInfoTableString(predictions) {
+  entriesString = '';
+  for(var i = 0; i < predictions.length; i++) {
+    entriesString += '' +
+    '<tr>' +
+    '<td>' + predictions[i].destination + '</td>' +
+    '<td>' + predictions[i].seconds + '</td>' +
+    '</tr>';
+  }
+  htmlTable = '' +
+  '<table id=\"table2\">' +
+  '<tr>' +
+    '<th>Destination</th>' +
+    '<th>Seconds</th>' +
+  '</tr>' +
+  entriesString +
+  '</table>';
+  return htmlTable;
+}
+
+/*
+returns an array in ascending order of distance from given point
+where each element has format: {locationName: __, distance:__ }
+*/
+function getClosestLocationsFromPoint(point, locations) {
+  var arr = [];
+  for (var i = 0; i < locations.length; i++) {
+    arr.push({
+      location: locations[i],
+      distance: distanceBetweenCoords(point, locations[i].coords)
+    });
+  }
+
+  return arr.sort(function(a, b){return a.distance-b.distance});
 }
 
 /* calculates the distance between two coordinates */
@@ -235,4 +292,50 @@ function distanceBetweenCoords(coord1, coord2) {
   var d = R * c;
 
   return d;
+}
+
+
+function setStopInfoWindow(stopName, marker, map) {
+  var request = new XMLHttpRequest();
+  request.open("GET", "https://powerful-depths-66091.herokuapp.com/redline.json", true);
+
+  request.onreadystatechange = function() {
+    if (request.readyState == 4 && request.status == 200) {
+      jsondata = request.responseText;
+      predictions = parseTrips(jsondata, stopName);
+      displayStopInfoWindow(predictions, marker, map);
+    }
+    else if (request.readyState == 4 && request.status != 200) {
+      console.log("Something went wrong with the request!");
+    }
+    else
+    {
+      console.log("In progress...");
+    }
+  };
+
+  request.send(null);
+}
+
+function parseTrips(jsondata, stopName) {
+  data = JSON.parse(jsondata);
+  trips = data.TripList.Trips;
+
+  stopSchedule = [];
+  for (var i = 0; i < trips.length; i++) {
+    trip = trips[i];
+    dest = trip.Destination;
+    console.log("stop: " + stopName);
+    for (var j = 0; j < trip.Predictions.length; j++) {
+
+      if (trip.Predictions[j].Stop == stopName) {
+        stopSchedule.push({
+          stop: stopName,
+          destination: dest,
+          seconds: trip.Predictions[j].Seconds
+        });
+      }
+    }
+  }
+  return stopSchedule;
 }
