@@ -85,10 +85,11 @@ function initMap() {
   //set up MBTA
   markers = placeMarkers(map, redStops, markerIconPath);
   for (var i = 0; i < redStops.length; i++) {
-    name = redStops[i].name;
-    markers[i].addListener('click', function () {
-      setStopInfoWindow(name, this, map);
-    });
+    (function (name) {
+      markers[i].addListener('click', function () {
+        setStopInfoWindow(name, this, map);
+      });
+    })(redStops[i].name);
   }
 
   drawRoute(map, redRoute, redLineColor);
