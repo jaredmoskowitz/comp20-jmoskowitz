@@ -298,11 +298,12 @@ function distanceBetweenCoords(coord1, coord2) {
 
 function setStopInfoWindow(stopName, marker, map) {
   var request = new XMLHttpRequest();
-  request.open("GET", "https://powerful-depths-66091.herokuapp.com/redline.json", true);
+  request.open("GET", "https://whispering-wildwood-58478.herokuapp.com/redline.json", true);
 
   request.onreadystatechange = function() {
     if (request.readyState == 4 && request.status == 200) {
       jsondata = request.responseText;
+      console.log(jsondata);
       predictions = parseTrips(jsondata, stopName);
       displayStopInfoWindow(predictions, marker, map);
     }
